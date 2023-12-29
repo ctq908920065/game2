@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        .container {
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(5, 50px);
+            grid-template-rows: 500px;
+            grid-column-gap: 0;
+            grid-row-gap: 0;
+            border-top: none;
+            border-left: 1px solid black;
+            border-right: 1px solid black;
+            border-bottom: 1px solid black;
+            margin: 200px auto;
+            width: 250px;
+            height: 250px;
+        }
+
+        .column {
+            width: 50px;
+            height: 250px;
+            border-top: none;
+            border-left: 1px solid black;
+            border-right: 1px solid black;
+            border-bottom: 1px solid black;
+        }
+
+        .box {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: red;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="column"></div>
+    <div class="column"></div>
+    <div class="column"></div>
+    <div class="column"></div>
+    <div class="column"></div>
+</div>
+
+<script>
+
+    const container = document.querySelector('.container');
+    // 获取所有的列
+    const columns = document.querySelectorAll('.column');
+
+    // 创建一个数组来保存每一列的可用高度
+    const heights = Array.from(columns, function () {
+        return container.offsetHeight;
+    });
+
+
+
+    createBox(randomIndex())
+
+    function createBox(index) {
+
+        const box = document.createElement('div');
+        // 添加class
+        box.classList.add('box');
+        // 加入到窗口
+        const column = columns[index];
+        column.appendChild(box);
+        // 创建一个文本节点来显示数字
+        const text = document.createTextNode('');
+        // 将文本节点添加到小方框中
+        box.appendChild(text);
+        const exponent = Math.floor(Math.random() * 8) + 1;
+        // 更新文本节点的内容
+        text.nodeValue = Math.pow(2, exponent);
+
+
+        // 将小方框的左边距设置为索引乘以50px
+        box.style.left = index * 50 + 'px';
+        box.style.top = 0 + 'px';
+        // 缓慢下落 position： 下落高度
+        let position = parseInt(box.style.top, 10);
+        let intervalId = setInterval(function () {
+            if (position < heights[index] - getExistBoxHigh(column)) {
+                position += 1;
+                box.style.top = position + 'px';
+            }else{
+
+                // 获取下面，左边，右边的box
+                const currentColumn = columns[index].querySelectorAll('.box');
+                if(currentColumn.length > 1){
+                    //获取下面box的数字
+                    const topBox = currentColumn[index-1];
+                    const number = topBox.textContent;
+                    if(number == box.textContent){
+                        alert("消除")
+                    }
+                }
+
+                if (parseInt(box.style.top, 10) <= 1) {
+                    reset()
+                }
+                clearInterval(intervalId);
+                removeEvent();
+                setTimeout(function () {
+                    createBox(randomIndex())
+                }, 500);
+            }
+        }, 20);
+
+
+        // 当box 落下的时候 判断下面左边右边 的box是不是和当前box的num一样
+        // 如果一致 就把别的方位的box合并到当前box上 数值相加
+
+
+        // 创建一个处理点击事件的函数
+        function handleClick(event) {
+            // 停止小方框的移动
+            clearInterval(intervalId);
+
+            // 获取被点击的列的索引
+            const clickedIndex = Array.prototype.indexOf.call(columns, event.target);
+            // 获取被点击的列
+            const clickedColumn = event.target;
+            // 从原来的列中删除小方框
+            columns[index].removeChild(box);
+            // 将小方框添加到被点击的列中
+            clickedColumn.appendChild(box);
+            // 将小方框移动到被点击的列
+            box.style.left = clickedIndex * 50 + 'px';
+
+            SetBoxTop(clickedColumn)
+
+            const currentColumn = columns[index].querySelectorAll('.box');
+            if(currentColumn.length > 1){
+                //获取下面box的数字
+                const topBox = currentColumn[index-1];
+                const number = topBox.textContent;
+                if(number == box.textContent){
+                    alert("消除")
+                }
+            }
+
+            // 游戏结束
+            if (parseInt(box.style.top, 10) < box.offsetHeight) {
+                reset()
+            }
+            setTimeout(function () {
+                clearInterval(intervalId);
+                removeEvent();
+                createBox(randomIndex())
+            }, 500);
+        }
+
+
+
+        // 删除每一个小方框
+        function clearAllBoxes() {
+            // 获取所有的小方框
+            const boxes = document.querySelectorAll('.box');
+            // 删除每一个小方框
+            boxes.forEach(function(box) {
+                box.parentNode.removeChild(box);
+            });
+        }
+
+        function SetBoxTop(clickedColumn){
+            let boxCount = getBoxLength(clickedColumn)
+            box.style.top = container.offsetHeight - box.offsetHeight * boxCount + 'px';
+        }
+
+        // 获取box的数量
+        function getBoxLength(clickedColumn){
+            // 将小方框移动到底部
+            const boxes = clickedColumn.querySelectorAll('.box');
+            // 获取小方框的数量
+            return boxes.length
+        }
+
+        // 获取当前列中的box高度总和
+        function getExistBoxHigh(clickedColumn){
+            // 将小方框移动到底部
+            const boxes = clickedColumn.querySelectorAll('.box');
+            // 获取小方框的数量
+            const boxCount = boxes.length;
+            return box.offsetHeight * boxCount
+        }
+
+        function reset(){
+            setTimeout(function () {
+                alert("游戏结束");
+                clearAllBoxes()
+            }, 100);
+        }
+
+        function removeEvent(){
+            // 移除所有列的点击事件监听器
+            columns.forEach(function (otherColumn) {
+                otherColumn.removeEventListener('click', handleClick);
+            });
+        }
+
+        // 为每一列添加点击事件监听器
+        columns.forEach(function (column) {
+            column.addEventListener('click', handleClick);
+        });
+    }
+
+    // 随机选择一个列的索引
+    function randomIndex(){
+        return Math.floor(Math.random() * columns.length);
+    }
+
+
+</script>
+
+</body>
+</html>
